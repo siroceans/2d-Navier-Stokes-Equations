@@ -14,10 +14,18 @@ rho = 1; % density
 Re = 100; % Reynolds number
 
 L = 1; % Length of the square
-N = 50; 
 
-%% Implementation? 
-[u, v, p] = incNavStokes(nu, rho, Re, L, N, N, 0.1);
+% Grid sizes 
+% (2x each time for grid refinement study!! ^_^)
+N_coarse = 50; 
+N_medium = 100; 
+N_fine = 200; 
+
+%% Report Results!!
+[u_coarse, v_coarse, p_coarse] = incNavStokes(nu, rho, Re, L, N_coarse, N_coarse, 0.1);
+[u_medium, v_medium, p_medium] = incNavStokes(nu, rho, Re, L, N_medium, N_medium, 0.1); 
+[u_fine, v_fine, p_fine] = incNavStokes(nu, rho, Re, L, N_fine, N_fine, 0.1); 
+
 
 %% Helper functions
 
@@ -42,8 +50,6 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
     % zero velocities as the initial condition
     u = zeros(Ny, Nx); 
     v = zeros(Ny, Nx); 
-    ustar = zeros(Ny, Nx); 
-    vstar = zeros(Ny, Nx); 
     P = zeros(size(u)); % Initial guess for P for the gauss seidel iterations!
     projector_algorithm = true; 
 
@@ -59,17 +65,20 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
         % in the interior nodes of the domain and the boundary values can be 
         % safely ignored for now! :D
 
+        ustar = zeros(size(u)); 
+        vstar = zeros(size(v)); 
+
         for i = 2:(Nx-1) % going through all of the interior nodes!
             for j = 2:(Ny-1)
                 % first find u*
-                %convx = ((u(j, i+1))^2 - (u(j, i-1))^2)/(2*dx) + (u(j+1,i) * v(j+1,i) - u(j-1,i) * v(j-1, i))/(2*dy);  % convection term in x
-                convx = u(j,i) * (u(j, i+1) - u(j,i-1))/(2 * dx) + v(j,i) * (u(j+1,i) - u(j-1,i))/(2*dy); 
+                convx = ((u(j, i+1))^2 - (u(j, i-1))^2)/(2*dx) + (u(j+1,i) * v(j+1,i) - u(j-1,i) * v(j-1, i))/(2*dy);  % convection term in x
+                %convx = u(j,i) * (u(j, i+1) - u(j,i-1))/(2 * dx) + v(j,i) * (u(j+1,i) - u(j-1,i))/(2*dy); 
                 diffx = nu * ( (u(j,i+1) + u(j, i-1) - 2*u(j,i))/(dx^2) + (u(j+1, i) + u(j-1,i) - 2*u(j,i))/(dy^2)); % diffusion term in x
                 ustar(j, i) = (- convx + diffx) * dt + u(j,i); 
 
                 % then; we find v* 
-                %convy = (u(j, i+1) * v(j, i+1) - u(j, i-1) * v(j, i-1))/(2*dx) + ((v(j+1, i))^2 - (v(j-1, i))^2)/(2*dy); 
-                convy = u(j,i) * (v(j,i+1) - v(j,i-1))/(2*dx) + v(j,i) * (v(j+1, i) - v(j-1, i))/(2*dy); 
+                convy = (u(j, i+1) * v(j, i+1) - u(j, i-1) * v(j, i-1))/(2*dx) + ((v(j+1, i))^2 - (v(j-1, i))^2)/(2*dy); 
+                %convy = u(j,i) * (v(j,i+1) - v(j,i-1))/(2*dx) + v(j,i) * (v(j+1, i) - v(j-1, i))/(2*dy); 
                 diffy = nu * ( (v(j,i+1) + v(j, i-1) - 2*v(j,i))/(dx^2) + (v(j+1, i) + v(j-1, i) - 2*v(j, i))/(dy^2)); 
                 vstar(j, i) = (-convy + diffy) * dt + v(j,i); 
             end 
@@ -82,11 +91,12 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
         % of P = 0 everywhere in the domain
 
         gauss = true; 
-        gauss_iteration = 0; 
+        gauss_iteration = 0;
+        gauss_tol = 10 ^ (-3);
 
         while gauss
             P_old = P; 
-            gauss_iteration = gauss_iteration + 1;
+            gauss_iteration = gauss_iteration + 1; 
 
             % updating all of the interior nodes
             for i = 2:(Nx-1)
@@ -94,50 +104,48 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
                     num1 = (P(j, i+1) + P(j, i-1))/(dx^2) + (P(j+1,i) + P(j-1, i))/(dy^2); 
                     num2 = (ustar(j, i+1) - ustar(j, i))/dx + (vstar(j+1, i) - vstar(j, i))/dy; 
                     den = -2/(dx^2) - 2/(dy^2); 
-                    P(j, i) = (-num1 + (rho /dt) * num2) / den; 
+                    P(j, i) = (-num1 + (rho/dt) * num2)/den; 
                 end 
             end
+            P(2,2) = 0; 
 
-            % updating boundary values using linear extrapolation
-            % error('worry about the interior corner nodes??? and corner ones as well lol')
-            for i = 1:(Nx)
-                % SOUTH boundary
-                P(1, i) = 2 * P(2, i) - P(3, i); 
-                % NORTH boundary
-                P(Ny, i) = 2 * P(Ny-1, i) - P(Ny-2, i); 
+            % Updating boundaries! (corners are IGNORED)
+            % North and South boundaries first
+            for i = 2:(Nx-1)
+                if i == 2 || i == (Nx-1) % Corner values
+                    % SOUTH boundary
+                    P(1, i) = P(2, i);
+                    % NORTH boundary
+                    P(Ny, i) = P(Ny-1, i); 
+                end
+                
+                % Rest of SOUTH boundary
+                %P(1, i) = 2 * P(2, i) - P(3, i); 
+                P(1, i) = P(2,i); 
+                % Rest of NORTH boundary
+                %P(Ny, i) = 2 * P(Ny-1, i) - P(Ny-2, i); 
+                P(Ny, i) = P(Ny-1, i); 
             end
-            for j = 1:(Ny)
-                % EAST boundary
-                P(j, 1) = 2 * P(j, 2) - P(j, 3); 
-                % WEST boundary 
-                P(j, Nx) = 2 * P(j, Nx-1) - P(j, Nx-2); 
+            % Now East and West boundaries!
+            for j = 2:(Ny-1)
+                if j == 2 || j == (Ny-1) % corner values first
+                    % EAST boundary
+                    P(j, 1) = P(j, 2); 
+                    % WEST boundary
+                    P(j, Nx) = P(j, Nx-1); 
+                end
+
+                % EAST boundary again!
+                %P(j, 1) = 2 * P(j, 2) - P(j, 3); 
+                P(j, 1) = P(j, 2); 
+                % WEST boundary again!
+                %P(j, Nx) = 2 * P(j, Nx-1) - P(j, Nx-2); 
+                P(j, Nx) = P(j, Nx-1); 
             end
-            P(2,2) = 0; % Fixing a node
 
-            % boundary conditions on corner nodes! (8 nodes adjacent to corners)
-            % here we apply 0th order extrapolation
-            % SOUTH Boundary
-            P(1, 2) = P(2, 2); 
-            P(1, Nx-1) = P(2, Nx-1); 
-            % EAST Boundary
-            P(2, Nx) = P(2, Nx-1); 
-            P(Ny-1, Nx) = P(Ny-1, Nx-1); 
-            % WEST Boundary
-            P(2, 1) = P(2, 2); 
-            P(Ny-1, 1) = P(Ny-1, 2); 
-            % NORTH Boundary
-            P(Ny, 2) = P(Ny-1, 2); 
-            P(Ny, Nx-1) = P(Ny-1, Nx-1); 
-
-            % LASTLY, we can do the 4 corner nodes! (just extending value from corner)
-            P(1,1) = P(2,2); % bottom left 
-            P(1, Nx) = P(2, Nx-1); % bottom right 
-            P(Ny, Nx) = P(Ny-1, Nx-1); % top right
-            P(Ny, 1) = P(Ny-1, 2); % top left
-
-            % Convergence criteria
-            MAE = max(max(abs((P - P_old)))); % Magnitude approximate error
-            if MAE < 10 ^ (-3) 
+           % Convergence criteria
+           e = abs(P - P_old); % magnitude approximate error
+            if max(max(e)) < gauss_tol
                 break
             end
         end
@@ -172,8 +180,8 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
         end
 
         % Calculating max courant numbers
-        Co_x = max(max(u)) * dt / dx; 
-        Co_y = max(max(v)) * dt / dy; 
+        Co_x = max(max(u_new)) * dt / dx; 
+        Co_y = max(max(v_new)) * dt / dy; 
         if max(Co_x, Co_y) > 0.5 
             fprintf('The max. Courant number is: Co_x = %.4f and Co_y = %.4f\n', Co_x, Co_y)
             disp('Warning! Courant number too high!!!')
