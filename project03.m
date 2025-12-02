@@ -23,10 +23,16 @@ N_fine = 200;
 
 %% Report Results!!
 [u_coarse, v_coarse, p_coarse] = incNavStokes(nu, rho, Re, L, N_coarse, N_coarse, 0.1);
-%[u_medium, v_medium, p_medium] = incNavStokes(nu, rho, Re, L, N_medium, N_medium, 0.1); 
-%[u_fine, v_fine, p_fine] = incNavStokes(nu, rho, Re, L, N_fine, N_fine, 0.1); 
+[u_medium, v_medium, p_medium] = incNavStokes(nu, rho, Re, L, N_medium, N_medium, 0.1); 
+[u_fine, v_fine, p_fine] = incNavStokes(nu, rho, Re, L, N_fine, N_fine, 0.1); 
 
 reportIndividualPlotting(u_coarse, v_coarse, p_coarse); 
+
+%% Grid Refinement study!!
+gridRefinement(u_coarse, u_medium, u_fine, 'u'); 
+gridRefinement(v_coarse, v_medium, v_fine, 'v'); 
+gridRefinement(p_coarse, p_medium, p_fine, 'p'); 
+
 %% Helper functions
 
 function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
@@ -221,6 +227,7 @@ function reportIndividualPlotting(u, v, p)
     grid on 
 
     subplot(3,1,2)
+    sgtitle(['Plots for grid resolution of Nx = Ny = ', num2str(n)])
     plot(x, vvals, 'm')
     title('v vs x @ y = 0.5')
     xlabel('x values')
@@ -241,6 +248,8 @@ function reportIndividualPlotting(u, v, p)
 
     figure()
     subplot(3,1,1)
+    sgtitle(['Plots for grid resolution of Nx = Ny = ', num2str(n)])
+
     plot(uvals, y, 'm')
     title('u vs y @ x = 0.5')
     xlabel('u values')
@@ -260,5 +269,47 @@ function reportIndividualPlotting(u, v, p)
     xlabel('p values')
     ylabel('y values')
     grid on
- 
+end
+
+function gridRefinement(phi1, phi2, phi3, field)
+    n1 = size(phi1, 1); 
+    n2 = size(phi2, 1); 
+    n3 = size(phi3, 1); 
+
+    x1 = 0:(1/(n1-1)):1; 
+    x2 = 0:(1/(n2-1)):1; 
+    x3 = 0:(1/(n3-1)):1; 
+
+    y1 = x1; 
+    y2 = x2; 
+    y3 = x3; 
+
+
+    % first plotting against x @ y = 0.5
+    phi1vals = phi1(n1/2, :); 
+    phi2vals = phi2(n2/2, :); 
+    phi3vals = phi3(n3/2, :); 
+
+    figure()
+    sgtitle(['Grid Refinement Study on ', field, ' values.'])
+    subplot(2,1,1)
+    plot(x1, phi1vals, 'k', x2, phi2vals, 'b', x3, phi3vals, 'm')
+    title([field, ' vs x @y = 0.5 for different grid resolutions'])
+    xlabel('x values')
+    ylabel([field, ' values'])
+    legend(['Nx = Ny = ', num2str(n1)], ['Nx = Ny = ', num2str(n2)], ['Nx = Ny = ', num2str(n3)])
+    grid on
+
+    % Then plotting against y @ x = 0.5
+    phi1vals = phi1(:, n1/2); 
+    phi2vals = phi2(:, n2/2); 
+    phi3vals = phi3(:, n3/2); 
+
+    subplot(2,1,2)
+    plot(phi1vals, y1, 'k', phi2vals, y2, 'b', phi3vals, y3, 'm')
+    title([field, ' vs y @ x = 0.5 for different grid resolutions'])
+    ylabel('y values')
+    xlabel([field, ' values'])
+    legend(['Nx = Ny = ', num2str(n1)], ['Nx = Ny = ', num2str(n2)], ['Nx = Ny = ', num2str(n3)])
+    grid on
 end
