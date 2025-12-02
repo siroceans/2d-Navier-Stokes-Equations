@@ -23,10 +23,10 @@ N_fine = 200;
 
 %% Report Results!!
 [u_coarse, v_coarse, p_coarse] = incNavStokes(nu, rho, Re, L, N_coarse, N_coarse, 0.1);
-[u_medium, v_medium, p_medium] = incNavStokes(nu, rho, Re, L, N_medium, N_medium, 0.1); 
-[u_fine, v_fine, p_fine] = incNavStokes(nu, rho, Re, L, N_fine, N_fine, 0.1); 
+%[u_medium, v_medium, p_medium] = incNavStokes(nu, rho, Re, L, N_medium, N_medium, 0.1); 
+%[u_fine, v_fine, p_fine] = incNavStokes(nu, rho, Re, L, N_fine, N_fine, 0.1); 
 
-
+reportIndividualPlotting(u_coarse, v_coarse, p_coarse); 
 %% Helper functions
 
 function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
@@ -198,4 +198,67 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
             v = v_new; 
         end
     end
+end
+
+function reportIndividualPlotting(u, v, p)
+    n = size(u, 1); 
+
+    % Create arrays for x and y
+    y = 0:(1/(n-1)):1; 
+    x = y; 
+
+    uvals = u(n/2, :); 
+    vvals = v(n/2, :); 
+    pvals = v(n/2, :); 
+
+    % Plot u, v, p vs x @ y = 0.5
+    figure()
+    subplot(3,1,1)
+    plot(x, uvals, 'm')
+    title('u vs x @ y = 0.5')
+    xlabel('x values')
+    ylabel('u values')
+    grid on 
+
+    subplot(3,1,2)
+    plot(x, vvals, 'm')
+    title('v vs x @ y = 0.5')
+    xlabel('x values')
+    ylabel('v values')
+    grid on 
+ 
+    subplot(3,1,3)
+    plot(x, pvals, 'm')
+    title('p vs x @ y = 0.5')
+    xlabel('x values')
+    ylabel('p values')
+    grid on 
+
+    % Plot u, v, p, vs y @ x = 0.5
+    uvals = u(:, n/2); 
+    vvals = v(:, n/2); 
+    pvals = p(:, n/2); 
+
+    figure()
+    subplot(3,1,1)
+    plot(uvals, y, 'm')
+    title('u vs y @ x = 0.5')
+    xlabel('u values')
+    ylabel('y values')
+    grid on
+
+    subplot(3,1,2)
+    plot(vvals, y, 'm')
+    title('v vs y @ x = 0.5')
+    xlabel('v values')
+    ylabel('y values')
+    grid on
+    
+    subplot(3,1,3)
+    plot(pvals, y, 'm')
+    title('p vs y @ x = 0.5')
+    xlabel('p values')
+    ylabel('y values')
+    grid on
+ 
 end
