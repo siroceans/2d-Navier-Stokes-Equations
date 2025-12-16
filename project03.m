@@ -48,6 +48,7 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
     dx = L / (Nx - 1); 
     dy = L / (Ny - 1); 
     time = 0; 
+    target = 0; 
 
     % Calculating dt assuming the max velocity is = 1 (since it is the velocity at the lid!)
     dt = maxco * dy * 1;    
@@ -198,6 +199,11 @@ function [u, v, P] = incNavStokes(nu, rho, Re, L, Nx, Ny, maxco, tol)
         % Checking for steady state!
         if MAE_x < tol && MAE_y < tol
             disp('Converged to steady state!')
+
+            % before breaking we shift p! remember we only care about the 
+            % shape of p and not about the absolute pressure of the fluid!
+            shift = P(Ny/2,Nx/2) - target; 
+            P = P - shift; 
             break
         else
             u = u_new; 
@@ -215,7 +221,7 @@ function reportIndividualPlotting(u, v, p)
 
     uvals = u(n/2, :); 
     vvals = v(n/2, :); 
-    pvals = v(n/2, :); 
+    pvals = p(n/2, :); 
 
     % Plot u, v, p vs x @ y = 0.5
     figure()

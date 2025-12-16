@@ -1,0 +1,9 @@
+# mac os 
+.DS_Store
+Thumbs.db
+
+# project stuff
+*.png
+*.docx
+*.txt
+
