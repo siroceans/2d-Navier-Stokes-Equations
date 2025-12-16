@@ -17,21 +17,39 @@ L = 1; % Length of the square
 
 % Grid sizes 
 % (2x each time for grid refinement study!! ^_^)
-N_coarse = 50; 
+N_coarse = 20; 
 N_medium = 100; 
 N_fine = 200; 
 
 %% Report Results!!
 [u_coarse, v_coarse, p_coarse] = incNavStokes(nu, rho, Re, L, N_coarse, N_coarse, 0.1);
-[u_medium, v_medium, p_medium] = incNavStokes(nu, rho, Re, L, N_medium, N_medium, 0.1); 
-[u_fine, v_fine, p_fine] = incNavStokes(nu, rho, Re, L, N_fine, N_fine, 0.1); 
+%[u_medium, v_medium, p_medium] = incNavStokes(nu, rho, Re, L, N_medium, N_medium, 0.1); 
+%[u_fine, v_fine, p_fine] = incNavStokes(nu, rho, Re, L, N_fine, N_fine, 0.1); 
 
-reportIndividualPlotting(u_coarse, v_coarse, p_coarse); 
+%reportIndividualPlotting(u_coarse, v_coarse, p_coarse); 
 
-%% Grid Refinement study!!
-gridRefinement(u_coarse, u_medium, u_fine, 'u'); 
-gridRefinement(v_coarse, v_medium, v_fine, 'v'); 
-gridRefinement(p_coarse, p_medium, p_fine, 'p'); 
+% vector field plot
+% fig = figure('Units','inches','Position',[1 1 5 4]);
+% x = linspace(0,1, N_coarse); 
+% y = linspace(0,1, N_coarse); 
+% [X, Y] = meshgrid(x, y); 
+% q = quiver(X, Y, u_coarse * 2, v_coarse * 2,'k', 'MarkerSize',6);
+% q.ShowArrowHead = 'off';
+% q.Marker = '.';
+% xlim([0 1])
+% ylim([0 1])
+% axis tight
+% xlabel('x')
+% ylabel('y')
+% title('Velocity vector field')
+% set(gca,'FontSize',12)
+% set(fig,'Color','w') 
+% exportgraphics(fig,'velocity_vector_field.png','Resolution',600)
+
+% %% Grid Refinement study!!
+% gridRefinement(u_coarse, u_medium, u_fine, 'u'); 
+% gridRefinement(v_coarse, v_medium, v_fine, 'v'); 
+% gridRefinement(p_coarse, p_medium, p_fine, 'p'); 
 
 %% Helper functions
 
